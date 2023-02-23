@@ -338,7 +338,26 @@ bool Codec::matchSample(const uchar *start) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 inline int untr_decode_audio4(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacket *pkt, uint maxlength) {
+#if 0
 	int consumed = avcodec_decode_audio4(avctx, frame, got_frame, pkt);
+#else
+    int consumed = avcodec_receive_frame(avctx,frame);
+    if (consumed == 0)
+        *got_frame = true;
+    if (consumed == AVERROR(EAGAIN))
+        consumed = 0;
+    if (consumed == 0)
+        consumed = avcodec_send_packet(avctx, pkt);
+    if (consumed == AVERROR(EAGAIN))
+        consumed = 0;
+    else if (consumed < 0)
+    {
+//        Debug(3, "codec/audio: audio decode error: %1 (%2)\n",av_make_error_string(error, sizeof(error), consumed),got_frame);
+        return consumed;
+    }
+    else
+        consumed = pkt->size;
+#endif
 
 	// ffmpeg 3.4+ uses internal buffer which needs to be updated.
 	// this is slow because of the internal memory allocation.
@@ -350,7 +369,26 @@ inline int untr_decode_audio4(AVCodecContext *avctx, AVFrame *frame, int *got_fr
 		}
 		avcodec_flush_buffers(avctx);
 		pkt->size = maxlength;
+#if 0
 		consumed = avcodec_decode_audio4(avctx, frame, got_frame, pkt);
+#else
+    consumed = avcodec_receive_frame(avctx,frame);
+    if (consumed == 0)
+        *got_frame = true;
+    if (consumed == AVERROR(EAGAIN))
+        consumed = 0;
+    if (consumed == 0)
+        consumed = avcodec_send_packet(avctx, pkt);
+    if (consumed == AVERROR(EAGAIN))
+        consumed = 0;
+    else if (consumed < 0)
+    {
+//        Debug(3, "codec/audio: audio decode error: %1 (%2)\n",av_make_error_string(error, sizeof(error), consumed),got_frame);
+        return consumed;
+    }
+    else
+        consumed = pkt->size;
+#endif
 		if (consumed < 0) {
 			avcodec_flush_buffers(avctx);
 		}
@@ -363,7 +401,28 @@ inline int untr_decode_video2(AVCodecContext *avctx, AVFrame *frame, int *got_fr
 	// thus there is no way to detect video frame bounderies using ffmpeg3.4+..
 	// https://github.com/FFmpeg/FFmpeg/blob/7fc329e2dd6226dfecaa4a1d7adf353bf2773726/libavcodec/avcodec.h#L4793
 	// https://github.com/FFmpeg/FFmpeg/commit/061a0c14bb5767bca72e3a7227ca400de439ba09
+#if 0
 	return avcodec_decode_video2(avctx, frame, got_frame, pkt);
+#else
+    int consumed = avcodec_receive_frame(avctx,frame);
+    if (consumed == 0)
+        *got_frame = true;
+    if (consumed == AVERROR(EAGAIN))
+        consumed = 0;
+    if (consumed == 0)
+        consumed = avcodec_send_packet(avctx, pkt);
+    if (consumed == AVERROR(EAGAIN))
+        consumed = 0;
+    else if (consumed < 0)
+    {
+//        Debug(3, "codec/audio: audio decode error: %1 (%2)\n",av_make_error_string(error, sizeof(error), consumed),got_frame);
+        return consumed;
+    }
+    else
+        consumed = pkt->size;
+
+    return consumed;
+#endif
 }
 #pragma GCC diagnostic pop
 
